@@ -21,15 +21,20 @@ stream.on('error', function(error){
 });
 
 stream.once('open', function(fd) {
-  var html = '<html><header>Resultados da busca por ' + custid + ' ' + regexp +
-              '</header> \n <body>\n';
-  stream.cork();
-  while(!stream.write(html));
+  var html = '<!DOCTYPE html>\n<html><header>Resultados da busca por ' + custid + ' ' + regexp +
+              '</header> \n <body>\n\n\n<ul>';
+  stream.write(html);
   // Começa com a raiz daquele vendedor, chama recursivamente para as próximas páginas
   getPages('http://lista.mercadolivre.com.br/_CustId_'+custid, stream);
 
-  stream.write('</body>');
-  // .end aqui criava problema de escrita após o fim
+  stream.once('drain', function(){
+    this.write('</ul>\n</body>');
+    this.end();
+  });
+});
+
+stream.on('end', function(){
+  console.log("Terminou.");
 });
 
 function getPages(url, stream){
@@ -40,18 +45,16 @@ function getPages(url, stream){
       if (err) return console.error(err);
 
       $ = cheerio.load(body);
-
       // pega os produtos desta página e busca pela expressão
       $('.list-view-item-title').each(function(i, item){
         var all = $(item);
         var texto = all.text();
         var match = texto.match(regexp);
-
         if (match){
           $('a',$(this)).each(function(){
             var href = $(this).attr('href');
             if (href.length>2){
-              stream.write(all.html());
+              stream.write('\t<li> '+all.html()+' </li>/n');
               stream.write('\n');
               console.log(href);
             }
