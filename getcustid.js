@@ -28,8 +28,7 @@ function getCustId(user){
 
         var match = href.match('_CustId_');
         if (match){
-          /* gambiarra para não ter que fazer parsing */
-          var custId = href.substring(41,59);
+          var custId = href.replace('*_*_','');
           console.log(custId);
         }
 
